@@ -146,3 +146,160 @@ app.listen(3000, () => console.log("Server running on port 3000"));
 ### Encrypting passwords
 
 1- install : npm install --save bcryptjs
+
+In the previous lecture, we added a basic authentication and signup flow but encountered a major security flaw: storing passwords in plain text. This is highly insecure because if the database is compromised or accessed by unauthorized personnel, user passwords are exposed.
+
+To secure passwords, we need to encrypt them using a one-way hashing method, making it impossible to reverse-engineer the original password. This way, even if the database is accessed, only the hashed version of the password is visible, not the actual password.
+
+### Steps to Implement Secure Password Storage:
+
+1. **Install bcryptjs**:
+
+   - Stop the server.
+   - Install the package using `npm install --save bcryptjs`.
+   - Restart the server.
+
+2. **Use bcryptjs for Hashing**:
+
+   - Import bcryptjs in the authentication controller: `const bcrypt = require('bcryptjs');`
+   - In the signup process, instead of storing the password directly, use bcrypt to hash the password.
+
+3. **Hashing Process**:
+
+   - Use `bcrypt.hash(password, 12)` where `12` is the salt value specifying the number of hashing rounds (a value of 12 is considered highly secure).
+   - The `hash` method returns a promise. Use a `.then` block to handle the hashed password once the hashing is complete.
+   - Store the hashed password in the database instead of the plain text password.
+
+4. **Test the Implementation**:
+   - Sign up with a new email to create a new user.
+   - Check the database to confirm that the stored password is a hashed value, not the original password.
+
+This approach ensures that user passwords are stored securely, protecting them even if the database is compromised. The hashed password cannot be decrypted, thus safeguarding the original passwords.
+
+For further improvements, ensure that error handling is added to notify users if the signup fails due to duplicate emails or other issues.
+
+<!-- Example -->
+
+```javascript
+// User registration (signup) endpoint
+app.post("/register", async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10); // Hashing the password
+    const newUser = new User({ username, password: hashedPassword });
+    await newUser.save();
+    res.status(201).send("User registered");
+  } catch (err) {
+    console.error("Error registering user:", err);
+    res.status(500).send("Internal server error");
+  }
+});
+
+// User login (signin) endpoint
+app.post("/login", async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(401).send("Invalid credentials");
+    }
+    const match = await bcrypt.compare(password, user.password); // Comparing the hashed password
+    if (match) {
+      res.status(200).send("Login successful");
+    } else {
+      res.status(401).send("Invalid credentials");
+    }
+  } catch (err) {
+    console.error("Error during login:", err);
+    res.status(500).send("Internal server error");
+  }
+});
+```
+
+Certainly! If you want to use `email` instead of `username` for user registration and login in your Express application with Mongoose and `bcrypt`, here’s how you can do it:
+
+### Updated User Registration (`/register`) Endpoint
+
+1. **Endpoint**: `POST /register`
+2. **Changes**:
+   - Modify the request body to accept `email` and `password`.
+   - Hash the `password` using `bcrypt.hash(password, 10)`.
+   - Create a new `User` instance with the hashed password and email.
+   - Save the user to MongoDB with `newUser.save()`.
+
+Here’s how you can update the endpoint:
+
+```javascript
+const bcrypt = require("bcrypt");
+const User = require("./models/User"); // Assuming you have a User model
+
+// User registration endpoint with email
+app.post("/register", async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create a new user with hashed password and email
+    const newUser = new User({ email, password: hashedPassword });
+
+    // Save the new user to the database
+    await newUser.save();
+
+    // Send a successful registration response
+    res.status(201).send("User registered");
+  } catch (err) {
+    // Handle errors
+    console.error("Error registering user:", err);
+    res.status(500).send("Internal server error");
+  }
+});
+```
+
+### Updated User Login (`/login`) Endpoint
+
+1. **Endpoint**: `POST /login`
+2. **Changes**:
+   - Modify the request body to accept `email` and `password`.
+   - Find the user in MongoDB using `User.findOne({ email })`.
+   - Compare the provided `password` with the stored hashed password using `bcrypt.compare()`.
+
+Here’s how you can update the login endpoint:
+
+```javascript
+// User login endpoint with email
+app.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    // Find user by email
+    const user = await User.findOne({ email });
+
+    // If user not found, return Unauthorized
+    if (!user) {
+      return res.status(401).send("Invalid credentials");
+    }
+
+    // Compare passwords
+    const match = await bcrypt.compare(password, user.password);
+
+    // If passwords match, return OK
+    if (match) {
+      res.status(200).send("Login successful");
+    } else {
+      // If passwords don't match, return Unauthorized
+      res.status(401).send("Invalid credentials");
+    }
+  } catch (err) {
+    // Handle errors
+    console.error("Error during login:", err);
+    res.status(500).send("Internal server error");
+  }
+});
+```
+
+### Summary
+
+- **Registration**: Uses `email` and `password` for creating a new user. Hashes the `password` using `bcrypt.hash()` before saving it to the database.
+- **Login**: Uses `email` and `password` for authenticating users. Retrieves the user by `email` from the database and compares the provided `password` with the hashed password using `bcrypt.compare()`.
+
+Ensure your `User` model and database schema are updated to store and query users by `email`. This approach enhances security by securely handling passwords and integrating them with your Express and Mongoose application. Adjust error handling and response messages based on your application's specific requirements and best practices.

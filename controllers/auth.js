@@ -38,15 +38,17 @@ exports.postSignup = (req, res, next) => {
       if (userDoc) {
         return res.redirect("/signup");
       }
-      return bcrypt.hash(password, 12);
+      return bcrypt
+        .hash(password, 12) // the number of hashing rounds (higher is more secure but slower) (a value of 12 is considered highly secure).
+        .then((hashedPassword) => {
+          return User.create({
+            email: email,
+            password: hashedPassword,
+            cart: { items: [] },
+          });
+        });
     })
-    .then((hashedPassword) => {
-      return User.create({
-        email: email,
-        password: hashedPassword,
-        cart: { items: [] },
-      });
-    })
+
     .then((result) => {
       console.log("User created");
       res.redirect("/login");
