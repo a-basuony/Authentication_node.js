@@ -70,6 +70,7 @@ exports.postSignup = (req, res, next) => {
 exports.postLogout = (req, res, next) => {
   req.session.destroy((err) => {
     console.log(err);
+    res.clearCookie("connect.sid"); // Clear the session cookie
     res.redirect("/");
   });
 };

@@ -310,3 +310,25 @@ app.post("/login", async (req, res) => {
 - **Login**: Uses `email` and `password` for authenticating users. Retrieves the user by `email` from the database and compares the provided `password` with the hashed password using `bcrypt.compare()`.
 
 Ensure your `User` model and database schema are updated to store and query users by `email`. This approach enhances security by securely handling passwords and integrating them with your Express and Mongoose application. Adjust error handling and response messages based on your application's specific requirements and best practices.
+
+### Protected Route
+
+    add before add product or get page form to add product
+        if(!req.session.isLoggedIn){
+            res.redirect("/login")
+        }
+        in this example
+
+```javascript
+exports.getAddProduct = (req, res, next) => {
+  if (!req.session.isLoggedIn) {
+    res.redirect("/login");
+  }
+  res.render("admin/edit-product", {
+    pageTitle: "Add Product",
+    path: "/admin/add-product",
+    editing: false,
+    isAuthenticated: req.session.isLoggedIn,
+  });
+};
+```
