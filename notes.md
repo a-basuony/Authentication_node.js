@@ -141,6 +141,8 @@ app.listen(3000, () => console.log("Server running on port 3000"));
 - **Session Management**: Properly manage sessions and invalidate them on logout.
 - **Environment Variables**: Store sensitive information like secret keys in environment variables.
 
-By implementing robust authentication mechanisms, you ensure that only authorized users can access your application's resources, enhancing overall security and user trust.
+## By implementing robust authentication mechanisms, you ensure that only authorized users can access your application's resources, enhancing overall security and user trust.
 
 ### Encrypting passwords
+
+1- install : npm install --save bcryptjs
