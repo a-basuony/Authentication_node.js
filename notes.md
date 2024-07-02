@@ -276,18 +276,25 @@ app.post("/login", async (req, res) => {
 
     // If user not found, return Unauthorized
     if (!user) {
-      return res.status(401).send("Invalid credentials");
+      return res.status(401).send("Invalid credentials"); // res.redirect('/login)
     }
 
-    // Compare passwords
+    // Compare passwords (login password , hashed password in db)
     const match = await bcrypt.compare(password, user.password);
 
     // If passwords match, return OK
+    // if the user did authenticated
     if (match) {
-      res.status(200).send("Login successful");
+      req.session.isLoggedIn = true;
+      req.session.user = user;
+      req.session.save((err) => {
+        console.log(err);
+        res.redirect("/");
+        //   res.status(200).send("Login successful"); // res.redirect("/")
+      });
     } else {
       // If passwords don't match, return Unauthorized
-      res.status(401).send("Invalid credentials");
+      res.status(401).send("Invalid credentials"); // res.redirect("/login")
     }
   } catch (err) {
     // Handle errors
