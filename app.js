@@ -1,11 +1,9 @@
 const path = require("path");
-
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const session = require("express-session");
 const csrf = require("csurf");
-//setup store
 const MongodbStore = require("connect-mongodb-session")(session);
 
 const errorController = require("./controllers/error");
@@ -16,7 +14,6 @@ const MONGODB_URI =
 
 const app = express();
 const csrfProtection = csrf();
-// 2
 const store = new MongodbStore({
   uri: MONGODB_URI,
   collection: "sessions",
@@ -32,23 +29,23 @@ const authRoutes = require("./routes/auth");
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, "public")));
 
-app.use(csrfProtection);
-// Adding CSRF Token to All Views , isisAuthenticated
-app.use((req, res, next) => {
-  res.locals.csrfToken = req.csrfToken();
-  res.locals.isAuthenticated = req.session.isLoggedIn;
-
-  next();
-});
-
 app.use(
   session({
     secret: "my-secret-key",
     resave: false,
     saveUninitialized: false,
-    store: store, //3
+    store: store,
   })
 );
+
+app.use(csrfProtection);
+
+// Adding CSRF Token to All Views , isAuthenticated
+app.use((req, res, next) => {
+  res.locals.csrfToken = req.csrfToken();
+  res.locals.isAuthenticated = req.session.isLoggedIn;
+  next();
+});
 
 app.use("/admin", adminRoutes);
 app.use(shopRoutes);
@@ -57,7 +54,10 @@ app.use(authRoutes);
 app.use(errorController.get404);
 
 mongoose
-  .connect(MONGODB_URI)
+  .connect(MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
   .then((result) => {
     User.findOne().then((user) => {
       if (!user) {
@@ -71,7 +71,9 @@ mongoose
         user.save();
       }
     });
-    app.listen(3000);
+    app.listen(3000, () => {
+      console.log("Server is running on port 3000");
+    });
   })
   .catch((err) => {
     console.log(err);

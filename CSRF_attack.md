@@ -98,3 +98,183 @@ By using CSRF tokens, you ensure that only requests coming from your actual webs
                 res.locals.csrfToken = req.csrfToken();
                 next();
             });
+
+---
+
+### CSRF Protection in Simple Terms
+
+#### What is CSRF?
+
+**CSRF (Cross-Site Request Forgery)** is a type of attack where a malicious website tricks a user into performing unwanted actions on another website where the user is authenticated.
+
+#### How Does CSRF Work?
+
+1. **User Logs In**: A user logs into your site, establishing a session with a cookie.
+2. **User Visits Malicious Site**: The user is tricked into visiting a malicious site.
+3. **Malicious Requests**: The malicious site sends requests to your server using the user's session cookie.
+4. **Unwanted Actions**: The user's session is used to perform actions they didn't intend.
+
+#### How to Protect Against CSRF?
+
+**CSRF Tokens**: These are unique tokens generated for each session and included in forms on your site. They ensure requests come from your site and not a malicious one.
+
+### Steps to Implement CSRF Protection
+
+1. **Install `csurf` Package**:
+
+   ```bash
+   npm install --save csurf
+   ```
+
+2. **Set Up CSRF Middleware**:
+
+   In your `app.js` file:
+
+   ```javascript
+   const csrf = require("csurf");
+   const csrfProtection = csrf();
+
+   // After initializing session
+   app.use(csrfProtection);
+   ```
+
+3. **Include CSRF Token in Views**:
+
+   In your controller (e.g., `getIndex`):
+
+   ```javascript
+   res.render("index", { csrfToken: req.csrfToken() });
+   ```
+
+4. **Add CSRF Token to Forms**:
+
+   In your EJS template (e.g., `navigation.ejs`):
+
+   ```html
+   <form action="/logout" method="POST">
+     <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+     <button type="submit">Logout</button>
+   </form>
+   ```
+
+5. **Ensure Token is in All Forms**:
+
+   - For every form that changes data, include the CSRF token as a hidden input.
+   - Example for a login form:
+     ```html
+     <form action="/login" method="POST">
+       <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+       <input type="text" name="email" />
+       <input type="password" name="password" />
+       <button type="submit">Login</button>
+     </form>
+     ```
+
+6. **Simplify Adding CSRF Token to All Views**:
+
+   Instead of adding `csrfToken` to each render function, use a middleware to set it for all views:
+
+   ```javascript
+   app.use((req, res, next) => {
+     res.locals.csrfToken = req.csrfToken();
+     next();
+   });
+   ```
+
+### Summary
+
+- **Install and set up `csurf` package** to generate and check CSRF tokens.
+- **Include CSRF tokens in all forms** that perform actions affecting the backend.
+- **Use middleware to automatically provide the token** to all views, making it easier to include in forms.
+
+By following these steps, you can protect your application from CSRF attacks, ensuring that only legitimate requests from your site are processed.
+
+### Ensuring CSRF Token and Authentication Status on Every Page
+
+To make sure the CSRF token and authentication status are available on every page, you can set up a middleware in your `app.js` file. This middleware will attach the CSRF token and authentication status to the local variables accessible in your views. Here's how you can do it:
+
+1. **Set Up Middleware in `app.js`**:
+   Add a middleware function to attach the CSRF token and authentication status to the response locals.
+
+   ```javascript
+   // Add this middleware after extracting the user and before defining your routes
+   app.use((req, res, next) => {
+     res.locals.isAuthenticated = req.session.isLoggedIn;
+     res.locals.csrfToken = req.csrfToken();
+     next();
+   });
+   ```
+
+2. **Use CSRF Token in Forms**:
+   Update your forms in the views to include the CSRF token as a hidden input. This is crucial for every form that sends data via POST requests.
+
+   **Example for Navigation (logout form)**:
+
+   ```html
+   <form action="/logout" method="POST">
+     <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+     <button type="submit">Logout</button>
+   </form>
+   ```
+
+   **Example for Login Form**:
+
+   ```html
+   <form action="/login" method="POST">
+     <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+     <input type="email" name="email" required />
+     <input type="password" name="password" required />
+     <button type="submit">Login</button>
+   </form>
+   ```
+
+   **Example for Add to Cart Form**:
+
+   ```html
+   <form action="/cart" method="POST">
+     <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+     <input type="hidden" name="productId" value="<%= product._id %>" />
+     <button type="submit">Add to Cart</button>
+   </form>
+   ```
+
+3. **Repeat for All Forms**:
+   Make sure every form that performs a sensitive action (e.g., login, signup, add to cart, delete item) includes the CSRF token. Here’s how to do it in various views:
+
+   **Admin Edit Product Form**:
+
+   ```html
+   <form action="/admin/edit-product" method="POST">
+     <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+     <!-- Other form fields -->
+   </form>
+   ```
+
+   **Delete Product Form**:
+
+   ```html
+   <form action="/admin/delete-product" method="POST">
+     <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+     <input type="hidden" name="productId" value="<%= product._id %>" />
+     <button type="submit">Delete</button>
+   </form>
+   ```
+
+   **Order Now Button**:
+
+   ```html
+   <form action="/create-order" method="POST">
+     <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+     <button type="submit">Order Now</button>
+   </form>
+   ```
+
+### Testing the Implementation
+
+1. **Check All Pages**: Make sure every page with a form includes the CSRF token.
+2. **Submit Forms**: Test submitting each form to ensure the CSRF protection works.
+3. **Inspect Elements**: Use browser developer tools to inspect the forms and ensure the hidden input for CSRF token is present.
+
+### Conclusion
+
+Adding CSRF protection ensures that only legitimate requests from your site's forms can alter data. This is essential for securing your application and preventing malicious actions. By following these steps, you ensure that every form and route in your application is protected from CSRF attacks.
