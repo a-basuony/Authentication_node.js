@@ -38,6 +38,23 @@ app.use(
   })
 );
 
+app.use((req, res, next) => {
+  if (!req.session.user) {
+    return next();
+  }
+  User.findById(req.session.user._id)
+    .then((user) => {
+      if (!user) {
+        return next();
+      }
+      req.user = user;
+      next();
+    })
+    .catch((err) => {
+      next(new Error(err));
+    });
+});
+
 app.use(csrfProtection);
 
 // Adding CSRF Token to All Views , isAuthenticated
@@ -59,18 +76,6 @@ mongoose
     useUnifiedTopology: true,
   })
   .then((result) => {
-    User.findOne().then((user) => {
-      if (!user) {
-        const user = new User({
-          name: "Max",
-          email: "max@test.com",
-          cart: {
-            items: [],
-          },
-        });
-        user.save();
-      }
-    });
     app.listen(3000, () => {
       console.log("Server is running on port 3000");
     });
