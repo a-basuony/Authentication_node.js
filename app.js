@@ -4,6 +4,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const session = require("express-session");
+const csrf = require("csurf");
 //setup store
 const MongodbStore = require("connect-mongodb-session")(session);
 
@@ -14,6 +15,7 @@ const MONGODB_URI =
   "mongodb+srv://mongoose-practice:4ty6f8y7Vk8yOv0T@cluster0.2jgswxg.mongodb.net/myMongoose-db";
 
 const app = express();
+const csrfProtection = csrf();
 // 2
 const store = new MongodbStore({
   uri: MONGODB_URI,
@@ -29,6 +31,15 @@ const authRoutes = require("./routes/auth");
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, "public")));
+
+app.use(csrfProtection);
+// Adding CSRF Token to All Views , isisAuthenticated
+app.use((req, res, next) => {
+  res.locals.csrfToken = req.csrfToken();
+  res.locals.isAuthenticated = req.session.isLoggedIn;
+
+  next();
+});
 
 app.use(
   session({
