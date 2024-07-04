@@ -1,9 +1,10 @@
+const crypto = require("crypto");
+
 const bcrypt = require("bcryptjs");
 const User = require("../models/user");
 
 const nodemailer = require("nodemailer");
 const sgTransport = require("nodemailer-sendgrid-transport");
-const { format } = require("express/lib/response");
 
 const transporter = nodemailer.createTransport(
   sgTransport({
@@ -121,5 +122,45 @@ exports.getReset = (req, res, next) => {
     path: "/reset",
     pageTitle: "Reset Password",
     errorMessage: message,
+  });
+};
+
+exports.postReset = (req, res, next) => {
+  crypto.randomBytes(32, (err, buffer) => {
+    if (err) {
+      console.log(err);
+      return res.redirect("/reset");
+    }
+    const token = buffer.toString("hex");
+    // A hexadecimal string containing random bytes.
+    // toString('hex') method converts the contents of the Buffer into a hexadecimal string.
+    //A Buffer object containing the random bytes.
+
+    User.findOne({ email: req.body.email })
+      .then((user) => {
+        if (!user) {
+          req.flash("error", "No account found with this email!");
+          return res.redirect("/reset");
+        }
+        user.resetToken = token;
+        user.resetTokenExpiration = Date.now() + 3600000; // 1 hour
+        return user.save();
+      })
+      .then((result) => {
+        res.redirect("/");
+        transporter.sendMail({
+          to: req.body.email,
+          from: "Ahmed@gmail.com",
+          subject: "Password Reset",
+          html: `
+          <p>You requested a password reset.</p>
+          <p>Click this <a href="http://localhost:3000/reset/${token}">link</a> to set a new password.</p>
+          <p>If you didn't request a password reset, please ignore this email.</p>
+        `,
+        });
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   });
 };
