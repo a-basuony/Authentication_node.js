@@ -189,3 +189,33 @@ exports.getNewPassword = (req, res, next) => {
     })
     .catch((err) => console.log(err));
 };
+
+exports.postNewPassword = (req, res, next) => {
+  const { userId, passwordToken, password, confirmPassword } = req.body;
+
+  User.findOne({
+    _id: userId,
+    resetToken: passwordToken,
+    resetTokenExpiration: { $gt: Date.now() },
+  }).then((user) => {
+    if (!user) {
+      req.flash("error", "Token is invalid, or has expired.");
+      return res.redirect("/reset");
+    }
+    if (password !== confirmPassword) {
+      req.flash("error", "Passwords do not match!");
+      return res.redirect(`/new-password/${passwordToken}`);
+    }
+    return bcrypt
+      .hash(password, 12)
+      .then((hashedPassword) => {
+        user.password = hashedPassword;
+        user.resetToken = null;
+        user.resetTokenExpiration = null;
+        return user.save();
+      })
+      .then((result) => {
+        res.redirect("/login");
+      });
+  });
+};
