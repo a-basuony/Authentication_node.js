@@ -6,13 +6,13 @@ const User = require("../models/user");
 const nodemailer = require("nodemailer");
 const sgTransport = require("nodemailer-sendgrid-transport");
 
-const transporter = nodemailer.createTransport(
-  sgTransport({
-    auth: {
-      api_key: process.env.SENDGRID_API_KEY,
-    },
-  })
-);
+const transporter = nodemailer.createTransport({
+  service: "gmail", // Replace with your actual email service provider
+  auth: {
+    user: "basuoney.chrom@gmail.com", // Replace with your email address
+    pass: "AmAaB1998@chro", // Replace with your email password (not recommended, consider environment variables)
+  },
+});
 
 exports.getLogin = (req, res, next) => {
   let message = req.flash("error");
@@ -93,7 +93,7 @@ exports.postSignup = (req, res, next) => {
       res.redirect("/login");
       return transporter.sendMail({
         to: email,
-        from: "Ahmed@gmail.com",
+        from: "basuoney.chrom@gmail.com",
         subject: "Signup succeeded!",
         html: "<h1>You successfully signed up!</h1>",
       });
@@ -150,7 +150,7 @@ exports.postReset = (req, res, next) => {
         res.redirect("/");
         transporter.sendMail({
           to: req.body.email,
-          from: "Ahmed@gmail.com",
+          from: "basuoney.chrom@gmail.com",
           subject: "Password Reset",
           html: `
           <p>You requested a password reset.</p>
